@@ -1,0 +1,44 @@
+﻿@model QuestionGeneratorWithCohere.Models.QuestionRequest
+@{
+    ViewData["Title"] = "Home";
+}
+
+<h2>Generate Questions</h2>
+<form method="post" asp-action="Generate">
+    <div>
+        <label>Syllabus:</label>
+        <textarea asp-for="Syllabus" required></textarea>
+    </div>
+    <div>
+        <label>Question Type:</label>
+        <select asp-for="QuestionType">
+            <option value="Single">Single Answer</option>
+            <option value="MCQ">Multiple Choice</option>
+            <option value="Multi-Part">Multi-Part</option>
+        </select>
+    </div>
+    <div>
+    <label>No of Questions:</label>
+        <input type="number" asp-for="NoOfQuestions" min="-1" required />
+    </div>
+    <div>
+        <label>Dificulty Level:</label>
+        <select asp-for="DificultyLevel">
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+        </select>
+    </div>
+    <button type="submit">Generate Questions</button>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    @foreach (var state in ViewData.ModelState)
+    {
+        foreach (var error in state.Value.Errors)
+        {
+            <p style="color: red;">@error.ErrorMessage</p>
+        }
+    }
+}

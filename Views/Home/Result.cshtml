@@ -1,0 +1,69 @@
+﻿@using Newtonsoft.Json
+@model QuestionGeneratorWithCohere.Models.SaveRequest
+
+<h2>Result</h2>
+<p>Syllabus: @Model.Syllabus</p>
+<p>Question Type: @Model.QuestionType</p>
+<p>Dificulty Level: @Model.DificultyLevel</p>
+<ul>
+    @foreach (var question in Model.Questions)
+    {
+        <li>
+            <strong>@question.Text</strong>
+            <p>Answer: @question.Answer</p>
+
+            @if (Model.QuestionType == "MCQ")
+            {
+                <p>Choices:</p>
+                <ul>
+                    @foreach (var choice in question.Choices)
+                    {
+                        <li>@choice</li>
+                    }
+                </ul>
+            }
+
+            @if (Model.QuestionType == "Multi-Part")
+            {
+                <p>Sub-Questions:</p>
+                <ul>
+                    @foreach (var subQuestion in question.SubQuestions)
+                    {
+                        <li>@subQuestion.Text - @subQuestion.Answer</li>
+                    }
+                </ul>
+            }
+        </li>
+    }
+</ul>
+
+<button id="btnSave" onclick="SaveQuestionData(this);">Save Data</button>
+<a asp-action="Index">Back to Generate Questions</a>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    function SaveQuestionData(button) {
+        debugger
+        const saveRequest = {
+            syllabus: "@Model.Syllabus",
+            questionType: "@Model.QuestionType",
+            questions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Questions))
+        };
+
+        $.ajax({
+            url: '/Home/SaveQuestions',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(saveRequest),
+            success: function (response) {
+                alert("Data saved successfully!");
+                button.disabled = true;
+                // window.location.href = '/Home/Success'; // Redirect to a success page if needed
+            },
+            error: function (xhr, status, error) {
+                alert("An error occurred: " + error);
+            }
+        });
+    }
+</script>
+
