@@ -110,13 +110,20 @@
         </ul>
     </div>
 </div>
+<div id="loader" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-light bg-opacity-50 d-flex align-items-center justify-content-center" style="z-index: 1050;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
 <div class="text-end mb-3">
     <button id="btnSave" onclick="SaveQuestionData(this);" class="btn btn-primary">Save Data</button>
     <a asp-action="Index"><i data-feather="corner-up-left"></i> <i class=""></i> Back to Generate Questions</a>
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@* <script>
     function SaveQuestionData(button) {
         debugger
         const saveRequest = {
@@ -140,5 +147,55 @@
             }
         });
     }
-</script>
+</script> *@
+<script>
+    function SaveQuestionData(button) {
+        const saveRequest = {
+            syllabus: "@Model.Syllabus",
+            questionType: "@Model.QuestionType",
+            questions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Questions))
+        };
 
+        showLoader();
+
+        $.ajax({
+            url: '/Home/SaveQuestions',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(saveRequest),
+            success: function (response) {
+                hideLoader();
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Saved!',
+                        text: response.message,
+                    });
+                    button.disabled = true;
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.message,
+                    });
+                }
+            },
+            error: function () {
+                hideLoader();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An unexpected error occurred.',
+                });
+            }
+        });
+    }
+
+    function showLoader() {
+        document.getElementById('loader').classList.remove('d-none');
+    }
+
+    function hideLoader() {
+        document.getElementById('loader').classList.add('d-none');
+    }
+</script>
