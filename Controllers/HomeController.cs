@@ -82,11 +82,20 @@ namespace QuestionGeneratorWithCohere.Controllers
                             var answer = q.TryGetProperty("answer", out var answerElement)
                                         ? answerElement.GetString()
                                         : string.Empty;
+                            var CO = q.TryGetProperty("CO", out var COElement)
+                                        ? COElement.GetString()
+                                        : string.Empty;
+                            var BL = q.TryGetProperty("BL", out var BLElement)
+                                ? BLElement.GetString()
+                                : string.Empty;
 
                             questions.Add(new QuestionDetail
                             {
                                 Text = questionText,
-                                Answer = answer
+                                Answer = answer,
+                                COText = CO,
+                                BLText = BL
+
                             });
                         }
                         else if (request.QuestionType == "MCQ")
@@ -101,42 +110,86 @@ namespace QuestionGeneratorWithCohere.Controllers
                                                     ? correctAnswerElement.GetString()
                                                     : string.Empty;
 
+                                var CO = q.TryGetProperty("CO", out var COElement)
+                                       ? COElement.GetString()
+                                       : string.Empty;
+                                var BL = q.TryGetProperty("BL", out var BLElement)
+                                    ? BLElement.GetString()
+                                    : string.Empty;
+
                                 questions.Add(new QuestionDetail
                                 {
                                     Text = questionText,
                                     Answer = correctAnswer,
-                                    Choices = choices
+                                    Choices = choices,
+                                    COText = CO,
+                                    BLText = BL
                                 });
                             }
                         }
                         else if (request.QuestionType == "Multi-Part")
                         {
                             var answer = q.TryGetProperty("correctAnswer", out var correctAnswerElement)
-                                        ? correctAnswerElement.GetString()
-                                        : string.Empty;
+                                         ? correctAnswerElement.GetString()
+                                         : string.Empty;
 
                             var subQuestions = q.TryGetProperty("subQuestions", out var subQuestionsElement) && subQuestionsElement.ValueKind == JsonValueKind.Array
-                            ? subQuestionsElement.EnumerateArray()
-                                .Select(subQ =>
-                                {
-                                    var subText = subQ.TryGetProperty("text", out var subTextElement) ? subTextElement.GetString() ?? string.Empty : string.Empty;
-                                    var subAnswer = subQ.TryGetProperty("answer", out var subAnswerElement) ? subAnswerElement.GetString() ?? string.Empty : string.Empty;
-                                    return new SubQuestion
+                                ? subQuestionsElement.EnumerateArray()
+                                    .Select(subQ =>
                                     {
-                                        Text = subText,
-                                        Answer = subAnswer
-                                    };
-                                })
-                                .ToList()
-                            : new List<SubQuestion>();
+                                        var subText = subQ.TryGetProperty("text", out var subTextElement)
+                                                      ? subTextElement.GetString() ?? string.Empty
+                                                      : string.Empty;
+                                        var subAnswer = subQ.TryGetProperty("answer", out var subAnswerElement)
+                                                        ? subAnswerElement.GetString() ?? string.Empty
+                                                        : string.Empty;
+                                        var subCO = subQ.TryGetProperty("CO", out var subCOElement)
+                                                    ? subCOElement.GetString() ?? string.Empty
+                                                    : string.Empty;
+                                        var subBL = subQ.TryGetProperty("BL", out var subBLElement)
+                                                    ? subBLElement.GetString() ?? string.Empty
+                                                    : string.Empty;
+
+                                        return new SubQuestion
+                                        {
+                                            Text = subText,
+                                            Answer = subAnswer,
+                                            SubCOText = subCO,
+                                            SubBLText = subBL
+                                        };
+                                    })
+                                    .ToList()
+                                : new List<SubQuestion>();
+
+                            // Retrieve CO and BL at the main question level (if available)
+                            var CO = q.TryGetProperty("CO", out var COElement)
+                                     ? COElement.GetString()
+                                     : string.Empty;
+                            var BL = q.TryGetProperty("BL", out var BLElement)
+                                     ? BLElement.GetString()
+                                     : string.Empty;
+
+                            // If CO and BL are empty at the main question level, extract them from the first sub-question (if available)
+                            if (string.IsNullOrEmpty(CO) && subQuestions.Any())
+                            {
+                                CO = subQuestions.First().SubCOText;
+                            }
+
+                            if (string.IsNullOrEmpty(BL) && subQuestions.Any())
+                            {
+                                BL = subQuestions.First().SubBLText;
+                            }
 
                             questions.Add(new QuestionDetail
                             {
                                 Text = questionText,
                                 Answer = answer,
-                                SubQuestions = subQuestions // This now works because SubQuestions is of type List<SubQuestion>
+                                SubQuestions = subQuestions,
+                                COText = CO,
+                                BLText = BL
                             });
                         }
+
                     }
                     catch (Exception innerEx)
                     {
@@ -148,8 +201,9 @@ namespace QuestionGeneratorWithCohere.Controllers
                 {
                     Syllabus = request.Syllabus,
                     QuestionType = request.QuestionType,
-                    DificultyLevel= request.DificultyLevel,
-                    Questions = questions
+                    DificultyLevel = request.DificultyLevel,
+                    Questions = questions,
+                  
                 };
 
                 return View("Result", saveRequest);
@@ -180,7 +234,8 @@ namespace QuestionGeneratorWithCohere.Controllers
                     {
                         var questionId = Guid.NewGuid();
                         var questionType = question.QuestionType;
-
+                        var COText = question.COText;
+                        var BLText = question.BLText;
                         using (var command = new SqlCommand("InsertQuestion_AI", connection))
                         {
                             command.CommandType = CommandType.StoredProcedure;
@@ -190,6 +245,8 @@ namespace QuestionGeneratorWithCohere.Controllers
                             command.Parameters.AddWithValue("@QuestionType", request.QuestionType);
                             command.Parameters.AddWithValue("@AnswerKey", question.Answer);
                             command.Parameters.AddWithValue("@PaperCode", request.Syllabus);
+                            command.Parameters.AddWithValue("@CO", COText);
+                            command.Parameters.AddWithValue("@BL", BLText);
 
 
                             if (question.Choices != null && question.Choices.Count > 0)

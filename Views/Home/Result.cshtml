@@ -81,7 +81,8 @@
                 <li class="qs-choise p-2">
                     <p class="text-danger mb-0"><strong><span class="fs-18">Q.</span> @question.Text</strong></p>
                     <p class=""><span>Ans:</span> @question.Answer</p>
-
+                    <p class=""><span>CO:</span> @question.COText</p>
+                    <p class=""><span>BL:</span> @question.BLText</p>
                     @if (Model.QuestionType == "MCQ")
                     {
                         <div class="">
@@ -149,17 +150,21 @@
     }
 </script> *@
 <script>
-    function SaveQuestionData(button) {
+    //For Server Use
+     function SaveQuestionData(button) {
+        
         const saveRequest = {
             syllabus: "@Model.Syllabus",
             questionType: "@Model.QuestionType",
             questions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Questions))
         };
-
+      
         showLoader();
-
+        // const baseUrl = window.location.origin + '/QuestionGeneratorAI';
+        // alert(baseUrl)
+        debugger
         $.ajax({
-            url: '/Home/SaveQuestions',
+           url: `/Home/SaveQuestions`,
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(saveRequest),
@@ -190,6 +195,48 @@
             }
         });
     }
+    //For local use
+    // function SaveQuestionData(button) {
+    //     const saveRequest = {
+    //         syllabus: "@Model.Syllabus",
+    //         questionType: "@Model.QuestionType",
+    //         questions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Questions))
+    //     };
+
+    //     showLoader();
+
+    //     $.ajax({
+    //         url: '/Home/SaveQuestions',
+    //         type: 'POST',
+    //         contentType: 'application/json',
+    //         data: JSON.stringify(saveRequest),
+    //         success: function (response) {
+    //             hideLoader();
+    //             if (response.success) {
+    //                 Swal.fire({
+    //                     icon: 'success',
+    //                     title: 'Saved!',
+    //                     text: response.message,
+    //                 });
+    //                 button.disabled = true;
+    //             } else {
+    //                 Swal.fire({
+    //                     icon: 'error',
+    //                     title: 'Error',
+    //                     text: response.message,
+    //                 });
+    //             }
+    //         },
+    //         error: function () {
+    //             hideLoader();
+    //             Swal.fire({
+    //                 icon: 'error',
+    //                 title: 'Error',
+    //                 text: 'An unexpected error occurred.',
+    //             });
+    //         }
+    //     });
+    // }
 
     function showLoader() {
         document.getElementById('loader').classList.remove('d-none');
